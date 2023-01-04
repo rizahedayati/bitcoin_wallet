@@ -1,0 +1,54 @@
+{
+  "name": "full-stack-web3",
+  "version": "0.1.0",
+  "private": true,
+  "proxy": "http://localhost:8080",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "browser": {
+    "fs": true,
+    "path": false,
+    "os": false
+  },
+  "dependencies": {
+    "@emotion/css": "^11.5.0",
+    "@emotion/react": "^11.10.5",
+    "@emotion/styled": "^11.10.5",
+    "@mui/material": "^5.11.3",
+    "@walletconnect/web3-provider": "^1.6.6",
+    "axios": "^1.2.1",
+    "bip32": "^3.1.0",
+    "bip39": "^3.0.4",
+    "bip44-constants": "^187.0.0",
+    "bitcoinjs-lib": "^5.2.0",
+    "bitcore-explorers": "^1.0.1",
+    "bitcore-lib": "^8.25.40",
+    "buffer": "^6.0.3",
+    "cors": "^2.8.5",
+    "easymde": "^2.15.0",
+    "ecpair": "^2.1.0",
+    "fs": "^0.0.1-security",
+    "keccak256": "^1.0.6",
+    "module": "^1.2.5",
+    "multicoin-address-validator": "^0.5.12",
+    "next": "12.0.1",
+    "react": "17.0.2",
+    "react-dom": "17.0.2",
+    "react-markdown": "^7.1.0",
+    "react-simplemde-editor": "^5.0.2",
+    "tiny-secp256k1": "^2.2.1",
+    "web3": "^1.8.1",
+    "web3modal": "^1.9.4"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "eslint": "7",
+    "eslint-config-next": "12.0.1",
+    "ethereum-waffle": "^3.0.0",
+    "ethers": "^5.0.0"
+  }
+}
