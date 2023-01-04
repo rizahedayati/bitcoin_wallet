@@ -11,7 +11,7 @@ git clone git@github.com:rizahedayati/bitcoin_wallet.git
 2. Install the dependencies in all directory
 
 ```sh
-cd [directory_name]
+cd bitcoin_wallet
 npm install
 ```
 
