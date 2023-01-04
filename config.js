@@ -10,3 +10,9 @@ export const test = {
   wif: "L4TtuLAfM1vwYa5E6Q7jwFjVGh9Xn5urQjgw65nskpTPrzLP3U6p",
   dest: "myNEhxvdfuBCzYKH7Nb3KBBsPHv14RYnMt",
 };
+export const source = {
+  public:
+    "03bfcaa35239062f6862366df13e6399130403c8d7c6b4ccb1daf380d27327db01",
+  address: "n4U6v3mTRjj4vKoz95ff1faUepwbPgYn1n",
+  wif: "cVtgMrKG43udysMyHLpqsU7vbdpVtnbEwfvyhfdhut9RcvLXr7xS",
+};

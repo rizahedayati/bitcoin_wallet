@@ -49,7 +49,7 @@ export default function BasicTable(props) {
     //   setTxs(result.data.txs);
     //   setBalance(result.data.balance);
     // }
-  });
+  },[]);
 
   return (
     <>
