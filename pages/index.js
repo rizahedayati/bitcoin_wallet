@@ -45,21 +45,6 @@ export default function Home(props) {
 
     let root = bip32.fromSeed(seed,bitcoin.networks.testnet);
 
-    // let btc_network = {
-    //   name: "bitcoin_testnet",
-    //   symbol: "BTC_TESTNET",
-    //   coinId: 1,
-    //   derivationPath: `m/44'/1'/0'/0/0`,
-    //   networkInfo: {
-    //     messagePrefix: "\x18Bitcoin Signed Message:\n",
-    //     bech32: "tb",
-    //     bip32: { public: 70617039, private: 70615956 },
-    //     pubKeyHash: 111,
-    //     scriptHash: 196,
-    //     wif: 239,
-    //   },
-    // };
-
     const masterNode = root.deriveHardened(44); // equiv to m/44'
     const xpub = masterNode.neutered().toBase58();
     const xprv = masterNode.toBase58();
@@ -72,27 +57,10 @@ export default function Home(props) {
       }).address
     );
 
-    console.log("node.toWIF()",node.toWIF());
-
-
-    // var addressFake = {
-    //   public:
-    //     node.publicKey.toString("hex"),
-    //   address: bitcoin.payments.p2pkh({
-    //     pubkey: node.publicKey,
-    //     network: btc_network.networkInfo,
-    //   }).address,
-    //   wif: node.toWIF(),
-    //   dest: to,
-    // };
-
-    // console.log(addressFake);
   }
 
   async function sendMoney() {
-   
-   
-    const satoshiToSend = Number(amount);
+    const satoshiToSend =  Math.floor(Number(amount) * 100000000);
     var key = ECPair.fromWIF(source.wif, bitcoin.networks.testnet);
     let price_per_byte;
 
@@ -113,17 +81,10 @@ export default function Home(props) {
       price_per_byte = gasResult.data.halfHourFee;
     }
 
-    console.log("price_per_byte",price_per_byte);
-
-   
-
     var tx = new bitcoin.TransactionBuilder(bitcoin.networks.testnet);
-    console.log(tx, "tx");
     let txs = result.txrefs;
-    console.log(txs);
 
-    let totalFee = (txs.length * 148 + 2 * 34 + 10) * 2; //1 is the no of outputs
-    console.log("totalFee", totalFee);
+    let totalFee = (txs.length * 148 + 2 * 34 + 10) * 2; //replace price_per_byte insted of 2
 
     if (balance - satoshiToSend - totalFee > 0 && txs) {
       txs.forEach(function (txn) {
@@ -139,14 +100,8 @@ export default function Home(props) {
         tx.sign(txn_no - 1, key);
         txn_no--;
       }
-      // tx.__TX.confirmations = 6;
-      // tx.__TX.double_spend = true;
-      tx.__TX.change_address = source.address;
-      console.log("tx", tx);
-
+    
       let tx_hex = tx.build().toHex();
-
-      console.log("tx_hex", tx_hex);
 
       axios
         .post("https://api.blockcypher.com/v1/btc/test3/txs/push", {
@@ -169,9 +124,7 @@ export default function Home(props) {
         <Grid item xs={5}>
           <div className={grayContainer}>
             <h2 className={title}>Create new wallet</h2>
-            <p className={description}>
-              click the genrate button and get some testnet fauset
-            </p>
+            
             <Button
               onClick={generateWallet}
               variant="contained"
