@@ -28,21 +28,7 @@ export default function Home(props) {
     const entropyLength = constant.ENTROPY_LENGTH.wordCount;
     const mnemonic = utils.generateMnemonic(language, entropyLength);
 
-    let token = "BTC_TESTNET",
-      network = "BTC_TESTNET";
-
-    const coinNetwork = constant.COINS_NETWORKS[token];
-
-    if (coinNetwork == undefined) {
-      return "the coin dosnt exist";
-    }
-
-    if (!coinNetwork.includes(network)) {
-      return `The ${token} dosnt have ${network} network in their list`;
-    }
-
     let seed = bip39.mnemonicToSeedSync(mnemonic);
-
     let root = bip32.fromSeed(seed,bitcoin.networks.testnet);
 
     const masterNode = root.deriveHardened(44); // equiv to m/44'
