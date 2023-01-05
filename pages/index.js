@@ -12,6 +12,7 @@ import BasicTable from "./../components/table";
 import Grid from "@mui/material/Grid";
 import Button from "@mui/material/Button";
 import { source } from "../config";
+import Alert from '@mui/material/Alert';
 
 const bip39 = require("bip39");
 const bip32 = BIP32Factory(ecc);
@@ -22,6 +23,9 @@ export default function Home(props) {
   const [to, setDestAddress] = useState("myNEhxvdfuBCzYKH7Nb3KBBsPHv14RYnMt");
   const [amount, setAmount] = useState();
   const [fee, setFee] = useState();
+  const [currentTx,setCurrentTx] = useState("");
+  const [error,setError] = useState("")
+
 
   async function generateWallet() {
     const language = constant.LANGUAGES.ENGLISH;
@@ -52,56 +56,64 @@ export default function Home(props) {
 
 
     const response = await axios.get(
-      `https://api.blockcypher.com/v1/btc/test3/addrs/${source.address}?unspentOnly=true&confirmations=6`
+      `https://api.blockcypher.com/v1/btc/test3/addrs/${source.address}?unspentOnly=true&confirmations=1`
     );
     let result = response.data;
-    let balance = result.balance;
+    console.log("result///////////////////////",result);
 
-    if (Number(fee) > 0) {
-      price_per_byte = Number(fee);
-    } else {
-      const gasResult = await axios.get(
-        `https://bitcoinfees.earn.com/api/v1/fees/recommended`
-      );
+    if(result.txrefs) {
+      let balance = result.balance;
 
-      price_per_byte = gasResult.data.halfHourFee;
-    }
-
-    var tx = new bitcoin.TransactionBuilder(bitcoin.networks.testnet);
-    let txs = result.txrefs;
-
-    let totalFee = (txs.length * 148 + 2 * 34 + 10) * 2; //replace price_per_byte insted of 2
-
-    if (balance - satoshiToSend - totalFee > 0 && txs) {
-      txs.forEach(function (txn) {
-        tx.addInput(txn.tx_hash, txn.tx_output_n);
-      });
-
-      tx.addOutput(to, satoshiToSend);
-      tx.addOutput(source.address, balance - satoshiToSend - totalFee);
-
-      let txn_no = txs.length;
-      console.log(txn_no);
-      while (txn_no > 0) {
-        tx.sign(txn_no - 1, key);
-        txn_no--;
+      if (Number(fee) > 0) {
+        price_per_byte = Number(fee);
+      } else {
+        const gasResult = await axios.get(
+          `https://bitcoinfees.earn.com/api/v1/fees/recommended`
+        );
+  
+        price_per_byte = gasResult.data.halfHourFee;
       }
-    
-      let tx_hex = tx.build().toHex();
-
-      axios
-        .post("https://api.blockcypher.com/v1/btc/test3/txs/push", {
-          tx: tx_hex,
-        })
-        .then(function (response) {
-          console.log(response);
-        })
-        .catch(function (error) {
-          console.log(error);
+  
+      var tx = new bitcoin.TransactionBuilder(bitcoin.networks.testnet);
+      let txs = result.txrefs;
+  
+      let totalFee = (txs.length * 148 + 2 * 34 + 10) * 2; //replace price_per_byte insted of 2
+  
+      if (balance - satoshiToSend - totalFee > 0 && txs) {
+        txs.forEach(function (txn) {
+          tx.addInput(txn.tx_hash, txn.tx_output_n);
         });
+  
+        tx.addOutput(to, satoshiToSend);
+        tx.addOutput(source.address, balance - satoshiToSend - totalFee);
+  
+        let txn_no = txs.length;
+        console.log(txn_no);
+        while (txn_no > 0) {
+          tx.sign(txn_no - 1, key);
+          txn_no--;
+        }
+      
+        let tx_hex = tx.build().toHex();
+  
+        axios
+          .post("https://api.blockcypher.com/v1/btc/test3/txs/push", {
+            tx: tx_hex,
+          })
+          .then(function (response) {
+            console.log("response",response);
+            setCurrentTx(response.data.tx.hash)
+          })
+          .catch(function (error) {
+            console.log(error);
+          });
+      } else {
+        alert("incufficent fund");
+      }
     } else {
-      alert("incufficent fund");
+      setError("you dont have any confirmed unspened output")
     }
+    
   }
 
   return (
@@ -161,6 +173,39 @@ export default function Home(props) {
               Send
             </Button>
 
+            {error && <Grid container>
+              <Grid item xs={12}>
+              <Alert severity="error"> {error}
+                </Alert>
+                </Grid>
+                </Grid>
+}
+            {
+              currentTx&& <Grid container>
+              <Grid item xs={12}>
+              <Alert severity="success">
+                <Grid container justifyContent="space-between">
+                  <Grid item xs={10}>
+                      Sending money is done successfully 
+                  </Grid>
+                  <Grid item xs={10}>
+                  <a
+                      className={linkStyle}
+                      href={`https://live.blockcypher.com/btc-testnet/tx/${currentTx}/`}
+                      target="_blank"
+                    >
+                      view on explorer
+                    </a>
+                  </Grid>
+                </Grid>
+              </Alert>
+
+              </Grid>
+            </Grid>
+            }
+
+            
+
           
           </div>
         </Grid>
@@ -181,6 +226,10 @@ const grayContainer = css`
   padding: 25px;
   border-radius: 20px;
   margin: 40px;
+`;
+const linkStyle = css`
+  color: blue;
+  text-decoration: underline;
 `;
 const description = css`
   margin: 0;

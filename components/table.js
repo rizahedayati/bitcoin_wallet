@@ -33,6 +33,7 @@ export default function BasicTable(props) {
         `https://api.blockcypher.com/v1/btc/test3/addrs/${props.address}/full?limit=50`
       )
       .then(function(result) {
+        console.log("result.data",result.data);
         setTransactionList(result.data);
         setTxs(result.data.txs);
         setBalance(result.data.balance);
@@ -53,8 +54,8 @@ export default function BasicTable(props) {
 
   return (
     <>
-      <h2 className={description}>{`total Balance : ${
-        transactionList && Number(balance) / 100000000
+      <h2 className={description}>{`total Balance of ${props.address} :  ${
+        transactionList && Math.floor(Number(balance)) / 100000000
       }`}</h2>
       <TableContainer component={Paper}>
         <Table sx={{ minWidth: 650 }} aria-label="simple table">
@@ -64,6 +65,7 @@ export default function BasicTable(props) {
               <TableCell>status</TableCell>
               <TableCell>date</TableCell>
               <TableCell>from</TableCell>
+              <TableCell>to</TableCell>
               <TableCell>amount</TableCell>
               <TableCell>utl</TableCell>
             </TableRow>
@@ -83,9 +85,10 @@ export default function BasicTable(props) {
                       ? `confirmed(${row.confirmations})`
                       : `pending(${row.confirmations})`}
                   </TableCell>
-                  <TableCell>{row.received}</TableCell>
-                  <TableCell>{transactionList.address}</TableCell>
-                  <TableCell>{Number(row.total) / 100000000}</TableCell>
+                  <TableCell>{new Date(row.received).toString()}</TableCell>
+                  <TableCell>{row.inputs[0].addresses[0]}</TableCell>
+                  <TableCell>{row.outputs[0].addresses[0]}</TableCell>
+                  <TableCell>{Number(row.outputs[0].value) / 100000000}</TableCell>
                   <TableCell>
                     <a
                       className={linkStyle}
