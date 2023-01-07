@@ -12,8 +12,8 @@ import BasicTable from "./../components/table";
 import Grid from "@mui/material/Grid";
 import Button from "@mui/material/Button";
 import { source } from "../config";
-import Alert from '@mui/material/Alert';
-
+import Alert from "@mui/material/Alert";
+import TextField from "@mui/material/TextField";
 const bip39 = require("bip39");
 const bip32 = BIP32Factory(ecc);
 const ECPair = ECPairFactory(ecc);
@@ -21,11 +21,10 @@ const ECPair = ECPairFactory(ecc);
 export default function Home(props) {
   const [address, setAddress] = useState("");
   const [to, setDestAddress] = useState("myNEhxvdfuBCzYKH7Nb3KBBsPHv14RYnMt");
-  const [amount, setAmount] = useState();
-  const [fee, setFee] = useState();
-  const [currentTx,setCurrentTx] = useState("");
-  const [error,setError] = useState("")
-
+  const [amount, setAmount] = useState(0);
+  const [fee, setFee] = useState(0);
+  const [currentTx, setCurrentTx] = useState("");
+  const [error, setError] = useState("");
 
   async function generateWallet() {
     const language = constant.LANGUAGES.ENGLISH;
@@ -33,87 +32,97 @@ export default function Home(props) {
     const mnemonic = utils.generateMnemonic(language, entropyLength);
 
     let seed = bip39.mnemonicToSeedSync(mnemonic);
-    let root = bip32.fromSeed(seed,bitcoin.networks.testnet);
+    let root = bip32.fromSeed(seed, bitcoin.networks.testnet);
 
     const masterNode = root.deriveHardened(44); // equiv to m/44'
     const xpub = masterNode.neutered().toBase58();
     const xprv = masterNode.toBase58();
-    const node = bip32.fromBase58(xprv,bitcoin.networks.testnet);
+    const node = bip32.fromBase58(xprv, bitcoin.networks.testnet);
 
     setAddress(
       bitcoin.payments.p2pkh({
         pubkey: node.publicKey,
-        network:  bitcoin.networks.testnet,
+        network: bitcoin.networks.testnet,
       }).address
     );
 
+    // let key = {
+    //   address: address,
+    //   mnemonic: mnemonic,
+    //   pubickey: node.publicKey.toString("hex"),
+    //   privateKey: node.privateKey.toString("hex"),
+    //   wif: node.toWIF(),
+    // };
+
+    // fs.writeFileSync('./key.txt', `${key}"`)
   }
 
   async function sendMoney() {
-    const satoshiToSend =  Math.floor(Number(amount) * 100000000);
+    const satoshiToSend = Math.floor(Number(amount) * 100000000);
     var key = ECPair.fromWIF(source.wif, bitcoin.networks.testnet);
     let price_per_byte;
 
-
-    const response = await axios.get(
-      `https://api.blockcypher.com/v1/btc/test3/addrs/${source.address}?unspentOnly=true&confirmations=1`
-    );
-    let result = response.data;
-    console.log("result///////////////////////",result);
-
-    if(result.txrefs) {
-      let balance = result.balance;
-
-      if (Number(fee) > 0) {
-        price_per_byte = Number(fee);
-      } else {
-        const gasResult = await axios.get(
-          `https://bitcoinfees.earn.com/api/v1/fees/recommended`
-        );
-  
-        price_per_byte = gasResult.data.halfHourFee;
-      }
-  
-      var tx = new bitcoin.TransactionBuilder(bitcoin.networks.testnet);
-      let txs = result.txrefs;
-  
-      let totalFee = (txs.length * 148 + 2 * 34 + 10) * 2; //replace price_per_byte insted of 2
-  
-      if (balance - satoshiToSend - totalFee > 0 && txs) {
-        txs.forEach(function (txn) {
-          tx.addInput(txn.tx_hash, txn.tx_output_n);
-        });
-  
-        tx.addOutput(to, satoshiToSend);
-        tx.addOutput(source.address, balance - satoshiToSend - totalFee);
-  
-        let txn_no = txs.length;
-        console.log(txn_no);
-        while (txn_no > 0) {
-          tx.sign(txn_no - 1, key);
-          txn_no--;
-        }
-      
-        let tx_hex = tx.build().toHex();
-  
-        axios
-          .post("https://api.blockcypher.com/v1/btc/test3/txs/push", {
-            tx: tx_hex,
-          })
-          .then(function (response) {
-            console.log("response",response);
-            setCurrentTx(response.data.tx.hash)
-          })
-          .catch(function (error) {
-            console.log(error);
-          });
-      } else {
-        alert("incufficent fund");
-      }
+    if (satoshiToSend == 0) {
+      setError("The amount must not be zero");
     } else {
-      setError("you dont have any confirmed unspened output")
+      const response = await axios.get(
+        `https://api.blockcypher.com/v1/btc/test3/addrs/${source.address}?unspentOnly=true`
+      );
+      let result = response.data;
+
+      if (result.unconfirmed_n_tx == 0 && result.txrefs) {
+        let balance = result.balance;
+
+        if (Number(fee) > 0) {
+          price_per_byte = Number(fee);
+        } else {
+          const gasResult = await axios.get(
+            `https://bitcoinfees.earn.com/api/v1/fees/recommended`
+          );
+
+          price_per_byte = gasResult.data.halfHourFee;
+        }
+
+        var tx = new bitcoin.TransactionBuilder(bitcoin.networks.testnet);
+        let txs = result.txrefs;
+
+        let totalFee = (txs.length * 148 + 2 * 34 + 10) * 2; //replace price_per_byte insted of 2
+
+        if (balance - satoshiToSend - totalFee > 0 && txs) {
+          txs.forEach(function (txn) {
+            tx.addInput(txn.tx_hash, txn.tx_output_n);
+          });
+
+          tx.addOutput(to, satoshiToSend);
+          tx.addOutput(source.address, balance - satoshiToSend - totalFee);
+
+          let txn_no = txs.length;
+          while (txn_no > 0) {
+            tx.sign(txn_no - 1, key);
+            txn_no--;
+          }
+
+          let tx_hex = tx.build().toHex();
+
+          axios
+            .post("https://api.blockcypher.com/v1/btc/test3/txs/push", {
+              tx: tx_hex,
+            })
+            .then(function (response) {
+              setCurrentTx(response.data.tx.hash);
+            })
+            .catch(function (error) {
+              setError(error.message);
+            });
+        } else {
+          setError("incufficent fund");
+        }
+      } else {
+        setError(
+          "you have an unconfirmed transaction please try after 10 minutes"
+        );
+      }
     }
-    
   }
 
   return (
@@ -122,7 +131,7 @@ export default function Home(props) {
         <Grid item xs={5}>
           <div className={grayContainer}>
             <h2 className={title}>Create new wallet</h2>
-            
+
             <Button
               onClick={generateWallet}
               variant="contained"
@@ -130,7 +139,7 @@ export default function Home(props) {
             >
               Generate
             </Button>
-         
+
             <p className={description}>{`wallet address : ${address}`}</p>
           </div>
         </Grid>
@@ -138,30 +147,37 @@ export default function Home(props) {
           <div className={grayContainer}>
             <h2 className={title}>Send Money</h2>
 
-            <input
+            <TextField
+              required
               onChange={(e) => setDestAddress(e.target.value)}
-              name="to"
-              placeholder="to"
+              id="to"
+              label="to"
               value={to}
-              className={inputStyle}
+              style={{ width: "96%", marginBottom: "27px", marginTop: "10px" }}
+              size="small"
             />
-            <Grid container>
+
+            <Grid container justifyContent="space-between">
               <Grid item xs={7}>
-                <input
+                <TextField
+                  required
                   onChange={(e) => setAmount(e.target.value)}
-                  name="amount"
-                  placeholder="amount"
+                  id="amount"
+                  label="amount"
                   value={amount}
-                  className={inputStyle}
+                  style={{ width: "90%", marginBottom: "27px" }}
+                  size="small"
                 />
               </Grid>
               <Grid item xs={5}>
-                <input
+                <TextField
+                  required
                   onChange={(e) => setFee(e.target.value)}
-                  name="fee"
-                  placeholder="fee"
+                  id="fee"
+                  label="fee"
                   value={fee}
-                  className={inputStyle}
+                  style={{ width: "90%", marginBottom: "27px" }}
+                  size="small"
                 />
               </Grid>
             </Grid>
@@ -173,40 +189,35 @@ export default function Home(props) {
               Send
             </Button>
 
-            {error && <Grid container>
-              <Grid item xs={12}>
-              <Alert severity="error"> {error}
-                </Alert>
+            {error && (
+              <Grid container>
+                <Grid item xs={12}>
+                  <Alert severity="error"> {error}</Alert>
                 </Grid>
-                </Grid>
-}
-            {
-              currentTx&& <Grid container>
-              <Grid item xs={12}>
-              <Alert severity="success">
-                <Grid container justifyContent="space-between">
-                  <Grid item xs={10}>
-                      Sending money is done successfully 
-                  </Grid>
-                  <Grid item xs={10}>
-                  <a
-                      className={linkStyle}
-                      href={`https://live.blockcypher.com/btc-testnet/tx/${currentTx}/`}
-                      target="_blank"
-                    >
-                      view on explorer
-                    </a>
-                  </Grid>
-                </Grid>
-              </Alert>
-
               </Grid>
-            </Grid>
-            }
-
-            
-
-          
+            )}
+            {currentTx && (
+              <Grid container>
+                <Grid item xs={12}>
+                  <Alert severity="success">
+                    <Grid container justifyContent="space-between">
+                      <Grid item xs={10}>
+                        Sending money is done successfully
+                      </Grid>
+                      <Grid item xs={10}>
+                        <a
+                          className={linkStyle}
+                          href={`https://live.blockcypher.com/btc-testnet/tx/${currentTx}/`}
+                          target="_blank"
+                        >
+                          {`${currentTx}`}
+                        </a>
+                      </Grid>
+                    </Grid>
+                  </Alert>
+                </Grid>
+              </Grid>
+            )}
           </div>
         </Grid>
       </Grid>
@@ -241,30 +252,4 @@ const title = css`
   font-weight: 500;
   margin: 0;
   margin-bottom: 10px;
-`;
-
-const buttonStyle = css`
-  margin-top: 10px;
-  margin-bottom: 10px;
-  background-color: #fafafa;
-  outline: none;
-  border: none;
-  border-radius: 15px;
-  cursor: pointer;
-  font-size: 18px;
-  padding: 16px 70px;
-  :hover {
-    background-color: gray;
-    color: white;
-  }
-`;
-
-const inputStyle = css`
-  width: 95%;
-  padding: 12px 20px;
-  margin: 10px 0;
-  display: inline-block;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
 `;

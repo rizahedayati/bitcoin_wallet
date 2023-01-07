@@ -5,6 +5,7 @@ module.exports = {
       asyncWebAssembly: true,
       layers: true,
     };
+    
     return config;
   },
   
